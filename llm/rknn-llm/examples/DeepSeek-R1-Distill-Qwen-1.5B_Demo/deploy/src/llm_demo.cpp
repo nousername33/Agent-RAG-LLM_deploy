@@ -97,8 +97,10 @@ void exit_handler(int signal)
 void send_response(const std::wstring &text)
 {
     std::string response_str = wstring_to_utf8(extract_after_think(text));
-    auto response = client.request(response_str);
-    std::cout << "[tts -> llm] received : " << response << std::endl;
+
+    // [Agent接管TTS调度] LLM不再直连TTS，由Agent统一决定是否发送到TTS
+    // auto response = client.request(response_str);
+    // std::cout << "[tts -> llm] received : " << response << std::endl;
 
     // ===================== 发送结果给 Agent =====================
     zmq::context_t ctx(1);
@@ -118,8 +120,9 @@ void callback(RKLLMResult *result, void *userdata, LLMCallState state)
         if (!buffer_.empty())
         {
             std::string response_str = wstring_to_utf8(extract_after_think(buffer_)) + " END";
-            auto response = client.request(response_str);
-            std::cout << "[tts -> llm] received: " << response << std::endl;
+            // [Agent接管TTS调度] LLM不再直连TTS
+            // auto response = client.request(response_str);
+            // std::cout << "[tts -> llm] received: " << response << std::endl;
             // ===================== 发送结果给 Agent =====================
             zmq::context_t ctx(1);
             zmq::socket_t sock(ctx, ZMQ_PUSH);
@@ -131,8 +134,9 @@ void callback(RKLLMResult *result, void *userdata, LLMCallState state)
         }
         else
         {
-            auto response = client.request("END");
-            std::cout << "[tts -> llm] received: " << response << std::endl;
+            // [Agent接管TTS调度] LLM不再直连TTS
+            // auto response = client.request("END");
+            // std::cout << "[tts -> llm] received: " << response << std::endl;
             // ===================== 发送结果给 Agent =====================
             zmq::context_t ctx(1);
             zmq::socket_t sock(ctx, ZMQ_PUSH);
