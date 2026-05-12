@@ -28,6 +28,7 @@
 #include <clocale>
 #include <cstdlib>
 #include <codecvt>
+#include "../../../../../../zmq-comm-kit/include/zmq.hpp"
 
 using namespace std;
 LLMHandle llmHandle = nullptr;
@@ -98,6 +99,15 @@ void send_response(const std::wstring &text)
     std::string response_str = wstring_to_utf8(extract_after_think(text));
     auto response = client.request(response_str);
     std::cout << "[tts -> llm] received : " << response << std::endl;
+
+    // ===================== 发送结果给 Agent =====================
+    zmq::context_t ctx(1);
+    zmq::socket_t sock(ctx, ZMQ_PUSH);
+    sock.connect("tcp://127.0.0.1:5559");
+    zmq::message_t msg(response_str.c_str(), response_str.size());
+    sock.send(msg, zmq::send_flags::none);
+    // ============================================================
+
 }
 
 void callback(RKLLMResult *result, void *userdata, LLMCallState state)
@@ -110,12 +120,26 @@ void callback(RKLLMResult *result, void *userdata, LLMCallState state)
             std::string response_str = wstring_to_utf8(extract_after_think(buffer_)) + " END";
             auto response = client.request(response_str);
             std::cout << "[tts -> llm] received: " << response << std::endl;
+            // ===================== 发送结果给 Agent =====================
+            zmq::context_t ctx(1);
+            zmq::socket_t sock(ctx, ZMQ_PUSH);
+            sock.connect("tcp://127.0.0.1:5559");
+            zmq::message_t msg(response_str.c_str(), response_str.size());
+            sock.send(msg, zmq::send_flags::none);
+            // ============================================================
             buffer_.clear();
         }
         else
         {
             auto response = client.request("END");
             std::cout << "[tts -> llm] received: " << response << std::endl;
+            // ===================== 发送结果给 Agent =====================
+            zmq::context_t ctx(1);
+            zmq::socket_t sock(ctx, ZMQ_PUSH);
+            sock.connect("tcp://127.0.0.1:5559");
+            zmq::message_t msg("END", 3);
+            sock.send(msg, zmq::send_flags::none);
+            // ============================================================
         }
 
         printf("\n");

@@ -14,6 +14,12 @@
 #include "sherpa-onnx/csrc/display.h"
 #include "sherpa-onnx/csrc/microphone.h"
 #include "sherpa-onnx/csrc/online-recognizer.h"
+#include "../../../zmq-comm-kit/include/zmq.hpp"
+
+
+#include <zmq.hpp>
+#define ZMQ_ASR_AGENT_PORT "5555"
+
 
 bool stop = false;
 float mic_sample_rate = 16000;
@@ -205,6 +211,14 @@ for a list of pre-trained models to download.
     if (is_endpoint) {
       if (!text.empty()) {
         ++segment_index;
+
+        // ====================== 发送给 Agent（最小入侵）======================
+        zmq::context_t ctx(1);
+        zmq::socket_t sock(ctx, ZMQ_PUSH);
+        sock.connect("tcp://127.0.0.1:5555");
+        zmq::message_t msg(text.data(), text.size());
+        sock.send(msg, zmq::send_flags::none);
+        // ====================================================================
       }
 
       recognizer.Reset(s.get());
